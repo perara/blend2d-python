@@ -86,6 +86,9 @@ cdef class Path:
 
     def clear(self):
         _capi.blPathClear(&self._self)
+        
+    def reset(self):
+        _capi.blPathReset(&self._self)
 
     def empty(self):
         return _capi.blPathGetSize(&self._self) == 0

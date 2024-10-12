@@ -1,8 +1,8 @@
 import blend2d
 import numpy as np
-from skimage.io import imsave
+import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     array = np.empty((256, 256, 4), dtype=np.uint8)
     image = blend2d.Image(array)
     context = blend2d.Context(image)
@@ -17,10 +17,10 @@ if __name__ == '__main__':
     context.fill_all()
 
     circle = blend2d.Path()
-    circle.ellipse(128, 128, 64, 64)
+    circle.add_ellipse(128, 128, 64, 64)
 
     context.set_comp_op(blend2d.CompOp.EXCLUSION)
     context.set_fill_style((0.0, 1.0, 1.0))
     context.fill_path(circle)
 
-    imsave('gradient.png', array)
+    plt.imshow(array)

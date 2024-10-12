@@ -1,14 +1,14 @@
 import blend2d
 import numpy as np
-from skimage.color import hsv2rgb
-from skimage.io import imsave
+import matplotlib.pyplot as plt
+from matplotlib.colors import hsv_to_rgb
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     array = np.empty((500, 500, 4), dtype=np.uint8)
     image = blend2d.Image(array)
     canvas = blend2d.Context(image)
 
-    canvas.clear()
+    canvas.clear_all()
     canvas.set_stroke_width(20.0)
 
     path = blend2d.Path()
@@ -27,10 +27,10 @@ if __name__ == '__main__':
 
     for i, cap in enumerate(caps):
         with canvas:
-            color = hsv2rgb([[i / len(caps), 0.75, 0.75]])[0]
+            color = hsv_to_rgb([[i / len(caps), 0.75, 0.75]])[0]
             canvas.set_stroke_style(color)
             canvas.set_stroke_caps(cap)
             canvas.translate(0, (i + 1) * 75)
             canvas.stroke_path(path)
 
-    imsave('lines.png', array)
+    plt.imshow(array)

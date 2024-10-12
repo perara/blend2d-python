@@ -1,6 +1,6 @@
 import blend2d
 import numpy as np
-from skimage.io import imsave
+import matplotlib.pyplot as plt
 
 
 def random_lines(context, width, height):
@@ -20,7 +20,7 @@ def random_lines(context, width, height):
         context.stroke_path(path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pattern_image = blend2d.Image(np.empty((256, 256, 4), dtype=np.uint8))
     pattern_context = blend2d.Context(pattern_image)
     random_lines(pattern_context, 256, 256)
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     array = np.empty((512, 512, 4), dtype=np.uint8)
     image = blend2d.Image(array)
     context = blend2d.Context(image)
-    context.clear()
+    context.clear_all()
 
     area = blend2d.RectI(0, 0, 256, 256)
     matrix = blend2d.Matrix2D()
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     context.set_fill_style(pattern)
 
     circle = blend2d.Path()
-    circle.ellipse(256, 256, 200, 200)
+    circle.add_ellipse(256, 256, 200, 200)
     context.fill_path(circle)
 
-    imsave('pattern.png', array)
+    plt.imshow(array)
