@@ -24,7 +24,7 @@
 # BLResult blArrayInit(BLArrayCore* self, uint32_t arrayTypeId)
 # BLResult blArrayDestroy(BLArrayCore* self)
 # BLResult blArrayReset(BLArrayCore* self)
-# BLResult blArrayCreateFromData(BLArrayCore* self, void* data, size_t size, size_t capacity, uint32_t dataAccessFlags, BLDestroyImplFunc destroyFunc, void* destroyData)
+# BLResult blArrayCreateFromData(BLArrayCore* self, void* data, size_t size, size_t capacity, uint32_t dataAccessFlags, BLDestroyExternalDataFunc destroyFunc, void* destroyData)
 # size_t blArrayGetSize(const BLArrayCore* self)
 # size_t blArrayGetCapacity(const BLArrayCore* self)
 # const void* blArrayGetData(const BLArrayCore* self)
@@ -71,16 +71,16 @@ from libc.stddef cimport size_t
 
 
 _DTYPE_MAP = {
-    'i1': _capi.BL_IMPL_TYPE_ARRAY_I8,
-    'u1': _capi.BL_IMPL_TYPE_ARRAY_U8,
-    'i2': _capi.BL_IMPL_TYPE_ARRAY_I16,
-    'u2': _capi.BL_IMPL_TYPE_ARRAY_U16,
-    'i4': _capi.BL_IMPL_TYPE_ARRAY_I32,
-    'u4': _capi.BL_IMPL_TYPE_ARRAY_U32,
-    'i8': _capi.BL_IMPL_TYPE_ARRAY_I64,
-    'u8': _capi.BL_IMPL_TYPE_ARRAY_U64,
-    'f4': _capi.BL_IMPL_TYPE_ARRAY_F32,
-    'f8': _capi.BL_IMPL_TYPE_ARRAY_F64,
+    'i1': _capi.BL_OBJECT_TYPE_ARRAY_INT8,
+    'u1': _capi.BL_OBJECT_TYPE_ARRAY_UINT8,
+    'i2': _capi.BL_OBJECT_TYPE_ARRAY_INT16,
+    'u2': _capi.BL_OBJECT_TYPE_ARRAY_UINT16,
+    'i4': _capi.BL_OBJECT_TYPE_ARRAY_INT32,
+    'u4': _capi.BL_OBJECT_TYPE_ARRAY_UINT32,
+    'i8': _capi.BL_OBJECT_TYPE_ARRAY_INT64,
+    'u8': _capi.BL_OBJECT_TYPE_ARRAY_UINT64,
+    'f4': _capi.BL_OBJECT_TYPE_ARRAY_FLOAT32,
+    'f8': _capi.BL_OBJECT_TYPE_ARRAY_FLOAT64,
 }
 
 cdef class Array:
@@ -108,17 +108,17 @@ cdef class Array:
         self._initialized = True
 
         for i in range(n_items):
-            if _type == _capi.BL_IMPL_TYPE_ARRAY_I8 or _type == _capi.BL_IMPL_TYPE_ARRAY_U8:
+            if _type == _capi.BL_OBJECT_TYPE_ARRAY_INT8 or _type == _capi.BL_OBJECT_TYPE_ARRAY_UINT8:
                 _capi.blArrayAppendU8(&self._self, array[i])
-            elif _type == _capi.BL_IMPL_TYPE_ARRAY_I16 or _type == _capi.BL_IMPL_TYPE_ARRAY_U16:
+            elif _type == _capi.BL_OBJECT_TYPE_ARRAY_INT16 or _type == _capi.BL_OBJECT_TYPE_ARRAY_UINT16:
                 _capi.blArrayAppendU16(&self._self, array[i])
-            elif _type == _capi.BL_IMPL_TYPE_ARRAY_I32 or _type == _capi.BL_IMPL_TYPE_ARRAY_U32:
+            elif _type == _capi.BL_OBJECT_TYPE_ARRAY_INT32 or _type == _capi.BL_OBJECT_TYPE_ARRAY_UINT32:
                 _capi.blArrayAppendU32(&self._self, array[i])
-            elif _type == _capi.BL_IMPL_TYPE_ARRAY_I64 or _type == _capi.BL_IMPL_TYPE_ARRAY_U8:
+            elif _type == _capi.BL_OBJECT_TYPE_ARRAY_INT64 or _type == _capi.BL_OBJECT_TYPE_ARRAY_UINT8:
                 _capi.blArrayAppendU64(&self._self, array[i])
-            elif _type == _capi.BL_IMPL_TYPE_ARRAY_F32:
+            elif _type == _capi.BL_OBJECT_TYPE_ARRAY_FLOAT32:
                 _capi.blArrayAppendF32(&self._self, array[i])
-            elif _type == _capi.BL_IMPL_TYPE_ARRAY_F64:
+            elif _type == _capi.BL_OBJECT_TYPE_ARRAY_FLOAT64:
                 _capi.blArrayAppendF64(&self._self, array[i])
 
 

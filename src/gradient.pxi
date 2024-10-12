@@ -81,7 +81,7 @@ cdef class ConicalGradient(Gradient):
         values[2] = angle
 
         _capi.blGradientInit(&self._self)
-        _capi.blGradientSetType(&self._self, _capi.BLGradientType.BL_GRADIENT_TYPE_CONICAL)
+        _capi.blGradientSetType(&self._self, _capi.BLGradientType.BL_GRADIENT_TYPE_CONIC)
         _capi.blGradientSetValues(&self._self, 0, values, 3)
 
 

@@ -51,7 +51,7 @@
 # BLResult blFontDataAssignWeak(BLFontDataCore* self, const BLFontDataCore* other)
 # BLResult blFontDataCreateFromFile(BLFontDataCore* self, const char* fileName, uint32_t readFlags)
 # BLResult blFontDataCreateFromDataArray(BLFontDataCore* self, const BLArrayCore* dataArray)
-# BLResult blFontDataCreateFromData(BLFontDataCore* self, const void* data, size_t dataSize, BLDestroyImplFunc destroyFunc, void* destroyData)
+# BLResult blFontDataCreateFromData(BLFontDataCore* self, const void* data, size_t dataSize, BLDestroyExternalDataFunc destroyFunc, void* destroyData)
 # bool blFontDataEquals(const BLFontDataCore* a, const BLFontDataCore* b)
 # BLResult blFontDataListTags(const BLFontDataCore* self, uint32_t faceIndex, BLArrayCore* dst)
 # size_t blFontDataQueryTables(const BLFontDataCore* self, uint32_t faceIndex, BLFontTable* dst, const BLTag* tags, size_t count)

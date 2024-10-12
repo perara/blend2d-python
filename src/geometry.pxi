@@ -31,34 +31,6 @@
 # uint32_t blMatrix2DGetType(const BLMatrix2D* self)
 # BLResult blMatrix2DMapPointDArray(const BLMatrix2D* self, BLPoint* dst, const BLPoint* src, size_t count)
 
-# BLRegion
-# BLResult blRegionInit(BLRegionCore* self)
-# BLResult blRegionDestroy(BLRegionCore* self)
-# BLResult blRegionReset(BLRegionCore* self)
-# size_t blRegionGetSize(const BLRegionCore* self)
-# size_t blRegionGetCapacity(const BLRegionCore* self)
-# const BLBoxI* blRegionGetData(const BLRegionCore* self)
-# BLResult blRegionClear(BLRegionCore* self)
-# BLResult blRegionShrink(BLRegionCore* self)
-# BLResult blRegionReserve(BLRegionCore* self, size_t n)
-# BLResult blRegionAssignMove(BLRegionCore* self, BLRegionCore* other)
-# BLResult blRegionAssignWeak(BLRegionCore* self, const BLRegionCore* other)
-# BLResult blRegionAssignDeep(BLRegionCore* self, const BLRegionCore* other)
-# BLResult blRegionAssignBoxI(BLRegionCore* self, const BLBoxI* src)
-# BLResult blRegionAssignBoxIArray(BLRegionCore* self, const BLBoxI* data, size_t n)
-# BLResult blRegionAssignRectI(BLRegionCore* self, const BLRectI* rect)
-# BLResult blRegionAssignRectIArray(BLRegionCore* self, const BLRectI* data, size_t n)
-# BLResult blRegionCombine(BLRegionCore* self, const BLRegionCore* a, const BLRegionCore* b, uint32_t booleanOp)
-# BLResult blRegionCombineRB(BLRegionCore* self, const BLRegionCore* a, const BLBoxI* b, uint32_t booleanOp)
-# BLResult blRegionCombineBR(BLRegionCore* self, const BLBoxI* a, const BLRegionCore* b, uint32_t booleanOp)
-# BLResult blRegionCombineBB(BLRegionCore* self, const BLBoxI* a, const BLBoxI* b, uint32_t booleanOp)
-# BLResult blRegionTranslate(BLRegionCore* self, const BLRegionCore* r, const BLPointI* pt)
-# BLResult blRegionTranslateAndClip(BLRegionCore* self, const BLRegionCore* r, const BLPointI* pt, const BLBoxI* clipBox)
-# BLResult blRegionIntersectAndClip(BLRegionCore* self, const BLRegionCore* a, const BLRegionCore* b, const BLBoxI* clipBox)
-# bool blRegionEquals(const BLRegionCore* a, const BLRegionCore* b)
-# uint32_t blRegionGetType(const BLRegionCore* self)
-# uint32_t blRegionHitTest(const BLRegionCore* self, const BLPointI* pt)
-# uint32_t blRegionHitTestBoxI(const BLRegionCore* self, const BLBoxI* box)
 
 
 cdef class Matrix2D:
@@ -72,19 +44,19 @@ cdef class Matrix2D:
         data[0] = angle
         data[1] = cx
         data[2] = cy
-        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_MATRIX2D_OP_ROTATE_PT, data)
+        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_TRANSFORM_OP_ROTATE_PT, data)
 
     def scale(self, double x, double y):
         cdef double data[2]
         data[0] = x
         data[1] = y
-        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_MATRIX2D_OP_SCALE, data)
+        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_TRANSFORM_OP_SCALE, data)
 
     def translate(self, double x, double y):
         cdef double data[2]
         data[0] = x
         data[1] = y
-        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_MATRIX2D_OP_TRANSLATE, data)
+        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_TRANSFORM_OP_TRANSLATE, data)
 
 
 cdef class Rect:
@@ -105,13 +77,3 @@ cdef class RectI:
         self._self.y = y
         self._self.w = w
         self._self.h = h
-
-
-cdef class Region:
-    cdef _capi.BLRegionCore _self
-
-    def __cinit__(self):
-        _capi.blRegionInit(&self._self)
-
-    def __dealloc__(self):
-        _capi.blRegionDestroy(&self._self)

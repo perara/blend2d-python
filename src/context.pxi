@@ -36,10 +36,10 @@
 # BLResult blContextQueryProperty(const BLContextCore* self, uint32_t propertyId, void* valueOut)
 # BLResult blContextSave(BLContextCore* self, BLContextCookie* cookie)
 # BLResult blContextRestore(BLContextCore* self, const BLContextCookie* cookie)
-# BLResult blContextGetMetaMatrix(const BLContextCore* self, BLMatrix2D* m)
-# BLResult blContextGetUserMatrix(const BLContextCore* self, BLMatrix2D* m)
+# BLResult blContextGetMetaTransform(const BLContextCore* self, BLMatrix2D* m)
+# BLResult blContextGetUserTransform(const BLContextCore* self, BLMatrix2D* m)
 # BLResult blContextUserToMeta(BLContextCore* self)
-# BLResult blContextMatrixOp(BLContextCore* self, uint32_t opType, const void* opData)
+# BLResult blContextApplyTransformOp(BLContextCore* self, uint32_t opType, const void* opData)
 # BLResult blContextSetHint(BLContextCore* self, uint32_t hintType, uint32_t value)
 # BLResult blContextSetHints(BLContextCore* self, const BLContextHints* hints)
 # BLResult blContextSetFlattenMode(BLContextCore* self, uint32_t mode)
@@ -49,11 +49,10 @@
 # BLResult blContextSetGlobalAlpha(BLContextCore* self, double alpha)
 # BLResult blContextSetFillAlpha(BLContextCore* self, double alpha)
 # BLResult blContextGetFillStyle(const BLContextCore* self, BLStyleCore* styleOut)
-# BLResult blContextSetFillStyle(BLContextCore* self, const BLStyleCore* style)
+# BLResult blContextSetFillStyle(BLContextCore* self, const BLUnknown* style)
 # BLResult blContextSetFillStyleRgba(BLContextCore* self, const BLRgba* rgba)
 # BLResult blContextSetFillStyleRgba32(BLContextCore* self, uint32_t rgba32)
 # BLResult blContextSetFillStyleRgba64(BLContextCore* self, uint64_t rgba64)
-# BLResult blContextSetFillStyleObject(BLContextCore* self, const void* object)
 # BLResult blContextSetFillRule(BLContextCore* self, uint32_t fillRule)
 # BLResult blContextSetStrokeAlpha(BLContextCore* self, double alpha)
 # BLResult blContextGetStrokeStyle(const BLContextCore* self, BLStyleCore* styleOut)
@@ -83,16 +82,16 @@
 # BLResult blContextFillRectD(BLContextCore* self, const BLRect* rect)
 # BLResult blContextFillPathD(BLContextCore* self, const BLPathCore* path)
 # BLResult blContextFillGeometry(BLContextCore* self, uint32_t geometryType, const void* geometryData)
-# BLResult blContextFillTextI(BLContextCore* self, const BLPointI* pt, const BLFontCore* font, const void* text, size_t size, uint32_t encoding)
-# BLResult blContextFillTextD(BLContextCore* self, const BLPoint* pt, const BLFontCore* font, const void* text, size_t size, uint32_t encoding)
+# BLResult blContextFillUtf8TextI(BLContextCore* self, const BLPointI* pt, const BLFontCore* font, const void* text, size_t size)
+# BLResult blContextFillUtf8TextD(BLContextCore* self, const BLPoint* pt, const BLFontCore* font, const void* text, size_t size)
 # BLResult blContextFillGlyphRunI(BLContextCore* self, const BLPointI* pt, const BLFontCore* font, const BLGlyphRun* glyphRun)
 # BLResult blContextFillGlyphRunD(BLContextCore* self, const BLPoint* pt, const BLFontCore* font, const BLGlyphRun* glyphRun)
 # BLResult blContextStrokeRectI(BLContextCore* self, const BLRectI* rect)
 # BLResult blContextStrokeRectD(BLContextCore* self, const BLRect* rect)
-# BLResult blContextStrokePathD(BLContextCore* self, const BLPathCore* path)
+# BLResult blContextStrokePathD(BLContextCore* self, const BLPoint* origin, const BLPathCore* path)
 # BLResult blContextStrokeGeometry(BLContextCore* self, uint32_t geometryType, const void* geometryData)
-# BLResult blContextStrokeTextI(BLContextCore* self, const BLPointI* pt, const BLFontCore* font, const void* text, size_t size, uint32_t encoding)
-# BLResult blContextStrokeTextD(BLContextCore* self, const BLPoint* pt, const BLFontCore* font, const void* text, size_t size, uint32_t encoding)
+# BLResult blContextStrokeUtf8TextI(BLContextCore* self, const BLPointI* pt, const BLFontCore* font, const void* text)
+# BLResult blContextStrokeUtf8TextD(BLContextCore* self, const BLPoint* pt, const BLFontCore* font, const void* text)
 # BLResult blContextStrokeGlyphRunI(BLContextCore* self, const BLPointI* pt, const BLFontCore* font, const BLGlyphRun* glyphRun)
 # BLResult blContextStrokeGlyphRunD(BLContextCore* self, const BLPoint* pt, const BLFontCore* font, const BLGlyphRun* glyphRun)
 # BLResult blContextBlitImageI(BLContextCore* self, const BLPointI* pt, const BLImageCore* img, const BLRectI* imgArea)
@@ -160,14 +159,14 @@ cdef class Context:
         """reset_matrix()
         Resets to the identity transform.
         """
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_RESET, NULL)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_RESET, NULL)
 
     def meta_matrix(self):
         """meta_matrix()
         Return the meta matrix
         """
         cdef Matrix2D mat = Matrix2D()
-        _capi.blContextGetMetaMatrix(&self._self, &mat._self)
+        _capi.blContextGetMetaTransform(&self._self, &mat._self)
         return mat
 
     def user_matrix(self):
@@ -175,7 +174,7 @@ cdef class Context:
         Return the user matrix
         """
         cdef Matrix2D mat = Matrix2D()
-        _capi.blContextGetUserMatrix(&self._self, &mat._self)
+        _capi.blContextGetUserTransform(&self._self, &mat._self)
         return mat
 
     def user_to_meta(self):
@@ -200,7 +199,7 @@ cdef class Context:
         :param y: The scale factor in Y
         """
         cdef double *data = [x, y]
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_SCALE, data)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_SCALE, data)
 
     def rotate(self, double angle):
         """rotate(angle)
@@ -208,7 +207,7 @@ cdef class Context:
 
         :param angle: The desired rotation in radians.
         """
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_ROTATE, &angle)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_ROTATE, &angle)
 
     def skew(self, double x, double y):
         """skew(x, y)
@@ -218,7 +217,7 @@ cdef class Context:
         :param y: The skew factor in Y
         """
         cdef double *data = [x, y]
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_SKEW, data)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_SKEW, data)
 
     def translate(self, double x, double y):
         """translate(x, y)
@@ -228,7 +227,7 @@ cdef class Context:
         :param y: The translation in Y
         """
         cdef double *data = [x, y]
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_TRANSLATE, data)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_TRANSLATE, data)
 
     def transform(self, Matrix2D mat):
         """transform(matrix)
@@ -236,7 +235,7 @@ cdef class Context:
 
         :param matrix: A Matrix2D instance
         """
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_TRANSFORM, &mat._self)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_TRANSFORM, &mat._self)
 
     def post_transform(self, Matrix2D mat):
         """post_transform(matrix)
@@ -244,7 +243,7 @@ cdef class Context:
 
         :param matrix: A Matrix2D instance
         """
-        _capi.blContextMatrixOp(&self._self, _capi.BL_MATRIX2D_OP_POST_TRANSFORM, &mat._self)
+        _capi.blContextApplyTransformOp(&self._self, _capi.BL_TRANSFORM_OP_POST_TRANSFORM, &mat._self)
 
     def set_alpha(self, float alpha):
         _capi.blContextSetGlobalAlpha(&self._self, alpha)
@@ -253,16 +252,16 @@ cdef class Context:
         _capi.blContextSetCompOp(&self._self, op)
 
     cdef _apply_gradient_fill(self, Gradient style):
-        _capi.blContextSetFillStyleObject(&self._self, &style._self)
+        _capi.blContextSetFillStyle(&self._self, &style._self)
 
     cdef _apply_gradient_stroke(self, Gradient style):
-        _capi.blContextSetStrokeStyleObject(&self._self, &style._self)
+        _capi.blContextSetStrokeStyle(&self._self, &style._self)
 
     cdef _apply_pattern_fill(self, Pattern style):
-        _capi.blContextSetFillStyleObject(&self._self, &style._self)
+        _capi.blContextSetFillStyle(&self._self, &style._self)
 
     cdef _apply_pattern_stroke(self, Pattern style):
-        _capi.blContextSetStrokeStyleObject(&self._self, &style._self)
+        _capi.blContextSetStrokeStyle(&self._self, &style._self)
 
     def set_fill_style(self, style):
         if isinstance(style, Gradient):
@@ -334,8 +333,12 @@ cdef class Context:
         _capi.blContextFillRectD(&self._self, &rect._self)
 
     def fill_path(self, Path path):
-        _capi.blContextFillPathD(&self._self, &path._self)
-
+        cdef:
+            _capi.BLPoint point
+        point.x = 0.
+        point.y = 0.
+        _capi.blContextFillPathD(&self._self, &point, &path._self)
+        
     def fill_text(self, position, Font font, text):
         cdef:
             bytes utf8_text = _utf8_string(text)
@@ -345,16 +348,19 @@ cdef class Context:
 
         point.x = position[0]
         point.y = position[1]
-        _capi.blContextFillTextD(
+        _capi.blContextFillUtf8TextD(
             &self._self, &point, &font._self,
-            c_text, size, _capi.BL_TEXT_ENCODING_UTF8
-        )
+            c_text, size)
 
     def stroke_rect(self, Rect rect):
         _capi.blContextStrokeRectD(&self._self, &rect._self)
 
     def stroke_path(self, Path path):
-        _capi.blContextStrokePathD(&self._self, &path._self)
+        cdef:
+            _capi.BLPoint point
+        point.x = 0.
+        point.y = 0.
+        _capi.blContextStrokePathD(&self._self, &point, &path._self)
 
     def stroke_text(self, position, Font font, text):
         cdef:
@@ -365,7 +371,6 @@ cdef class Context:
 
         point.x = position[0]
         point.y = position[1]
-        _capi.blContextStrokeTextD(
+        _capi.blContextStrokeUtf8TextD(
             &self._self, &point, &font._self,
-            c_text, size, _capi.BL_TEXT_ENCODING_UTF8
-        )
+            c_text, size)

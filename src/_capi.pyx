@@ -26,7 +26,7 @@ from libc.stdint cimport uint32_t
 
 cimport _capi
 
-cdef void _destroy_array_data(void* impl, void* destroyData):
+cdef void _destroy_array_data(void* impl, void* externalData, void* userData) noexcept:
     pass
 
 cdef uint32_t _get_rgba32_value(color):

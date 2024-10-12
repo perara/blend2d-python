@@ -69,7 +69,7 @@ class cmake_build_ext(build_ext):
             # Config and build the extension
             cmd = ['cmake', ext.cmake_lists_dir] + cmake_args
             subprocess.check_call(cmd, cwd=tmpdir)
-            cmd = ['cmake', '--build', '.', '--config', BUILD_TYPE]
+            cmd = ['cmake', '--build', '.','--parallel','8', '--config', BUILD_TYPE]
             subprocess.check_call(cmd, cwd=tmpdir)
 
 
