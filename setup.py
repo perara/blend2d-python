@@ -8,7 +8,7 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
 # Set to 'Release' when building a release
-BUILD_TYPE = 'Debug'
+BUILD_TYPE = 'Release'
 
 
 class CMakeExtension(Extension):
