@@ -40,7 +40,7 @@ cdef uint32_t _get_rgba32_value(color):
     else:
         alpha = 255
 
-    return (alpha << 24) | (r << 16) | (g << 8) | b
+    return (alpha << 24) | (b << 16) | (g << 8) | r
 
 cdef bytes _utf8_string(s):
     if type(s) is unicode:
