@@ -10,3 +10,5 @@ blend2d/*.so
 src/*.c
 *.py[cd]
 *.png
+
+dist
