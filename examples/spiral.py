@@ -2,8 +2,8 @@ from __future__ import division
 import argparse
 
 import numpy as np
-from matplotlib.colors import hsv_to_rgb
-import matplotlib.pyplot as plt
+from skimage.color import hsv2rgb
+from skimage.io import imsave
 
 import blend2d
 
@@ -43,7 +43,7 @@ def spiral(size, hue, sat, val):
     hsv[:, 0, 0] = np.linspace(hue[0], hue[1], color_count, endpoint=False)
     hsv[:, 0, 1] = np.linspace(sat[0], sat[1], color_count, endpoint=False)
     hsv[:, 0, 2] = np.linspace(val[0], val[1], color_count, endpoint=False)
-    spectrum = hsv_to_rgb(hsv).reshape(color_count, 3)
+    spectrum = hsv2rgb(hsv).reshape(color_count, 3)
 
     canvas.clear_all()  # fill with black
     for idx, offset in enumerate(offsets):
@@ -59,11 +59,11 @@ def spiral(size, hue, sat, val):
                 size[1] / 2 + offset * centers[i, 1],
             )
             canvas.scale(scale, scale)
-            canvas.fill_path(circle)
+            canvas.fill_path((0, 0), circle)
 
     # BGRA -> RGBA
     array[:, :, [0, 1, 2]] = array[:, :, [2, 1, 0]]
-    plt.imshow(array)
+    imsave("spiral.png", array)
 
 
 if __name__ == "__main__":

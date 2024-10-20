@@ -1,7 +1,7 @@
 import blend2d
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import hsv_to_rgb
+from skimage.color import hsv2rgb
+from skimage.io import imsave
 
 if __name__ == "__main__":
     array = np.empty((500, 500, 4), dtype=np.uint8)
@@ -12,9 +12,8 @@ if __name__ == "__main__":
     canvas.set_stroke_width(20.0)
 
     path = blend2d.Path()
-    path.move_to(100, 0)
-    path.quadric_to(125, 25, 250, 0)
-    path.quadric_to(375, -25, 400, 0)
+    path.quadric_to(25, 25, 150, 0)
+    path.quadric_to(275, -25, 300, 0)
 
     caps = {
         blend2d.StrokeCap.CAP_BUTT,
@@ -27,10 +26,9 @@ if __name__ == "__main__":
 
     for i, cap in enumerate(caps):
         with canvas:
-            color = hsv_to_rgb([[i / len(caps), 0.75, 0.75]])[0]
+            color = hsv2rgb([[i / len(caps), 0.75, 0.75]])[0]
             canvas.set_stroke_style(color)
             canvas.set_stroke_caps(cap)
-            canvas.translate(0, (i + 1) * 75)
-            canvas.stroke_path(path)
+            canvas.stroke_path((100, (i + 1) * 75), path)
 
-    plt.imshow(array)
+    imsave("lines.png", array)

@@ -308,12 +308,12 @@ cdef class Context:
     def set_stroke_width(self, float width):
         _capi.blContextSetStrokeWidth(&self._self, width)
 
-    def blit_image(self, position, Image img, Rect img_area):
+    def blit_image(self, origin, Image img, Rect img_area):
         cdef:
             _capi.BLPoint point
             _capi.BLRectI rect
 
-        point.x = position[0]; point.y = position[1]
+        point.x = origin[0]; point.y = origin[1]
         rect.x = <int>img_area._self.x; rect.y = <int>img_area._self.y
         rect.w = <int>img_area._self.w; rect.h = <int>img_area._self.h
         _capi.blContextBlitImageD(&self._self, &point, &img._self, &rect)
@@ -332,45 +332,45 @@ cdef class Context:
     def fill_rect(self, Rect rect):
         _capi.blContextFillRectD(&self._self, &rect._self)
 
-    def fill_path(self, Path path):
+    def fill_path(self, origin, Path path):
         cdef:
             _capi.BLPoint point
-        point.x = 0.
-        point.y = 0.
+            
+        point.x = origin[0]
+        point.y = origin[1]
         _capi.blContextFillPathD(&self._self, &point, &path._self)
         
-    def fill_text(self, position, Font font, text):
+    def fill_text(self, origin, Font font, text):
         cdef:
             bytes utf8_text = _utf8_string(text)
             char * c_text = utf8_text
             size_t size = len(utf8_text)
             _capi.BLPoint point
 
-        point.x = position[0]
-        point.y = position[1]
-        _capi.blContextFillUtf8TextD(
-            &self._self, &point, &font._self,
-            c_text, size)
+        point.x = origin[0]
+        point.y = origin[1]
+        _capi.blContextFillUtf8TextD(&self._self, &point, &font._self, c_text, size)
 
     def stroke_rect(self, Rect rect):
         _capi.blContextStrokeRectD(&self._self, &rect._self)
 
-    def stroke_path(self, Path path):
+    def stroke_path(self, origin, Path path):
         cdef:
             _capi.BLPoint point
-        point.x = 0.
-        point.y = 0.
+            
+        point.x = origin[0]
+        point.y = origin[1]
         _capi.blContextStrokePathD(&self._self, &point, &path._self)
 
-    def stroke_text(self, position, Font font, text):
+    def stroke_text(self, origin, Font font, text):
         cdef:
             bytes utf8_text = _utf8_string(text)
             char * c_text = utf8_text
             size_t size = len(utf8_text)
             _capi.BLPoint point
 
-        point.x = position[0]
-        point.y = position[1]
+        point.x = origin[0]
+        point.y = origin[1]
         _capi.blContextStrokeUtf8TextD(
             &self._self, &point, &font._self,
             c_text, size)

@@ -1,3 +1,4 @@
+#cython: language_level=3
 # The MIT License (MIT)
 #
 # Copyright (c) 2019 John Wiggins
@@ -132,7 +133,7 @@ cdef extern from "blend2d.h":
         BL_OBJECT_TYPE_ARRAY_FLOAT32
         BL_OBJECT_TYPE_ARRAY_FLOAT64
 
-    cdef enum BLMatrix2DOp:
+    cdef enum BLTransformOp:
         BL_TRANSFORM_OP_RESET
         BL_TRANSFORM_OP_ASSIGN
         BL_TRANSFORM_OP_TRANSLATE
@@ -334,7 +335,6 @@ cdef extern from "blend2d.h":
     BLResult blArrayInit(BLArrayCore* self, uint32_t arrayTypeId)
     BLResult blArrayDestroy(BLArrayCore* self)
     BLResult blArrayReset(BLArrayCore* self)
-    BLResult blArrayCreateFromData(BLArrayCore* self, void* data, size_t size, size_t capacity, uint32_t dataAccessFlags, BLDestroyExternalDataFunc destroyFunc, void* destroyData)
     size_t blArrayGetSize(const BLArrayCore* self)
     size_t blArrayGetCapacity(const BLArrayCore* self)
     const void* blArrayGetData(const BLArrayCore* self)
@@ -457,49 +457,27 @@ cdef extern from "blend2d.h":
     BLResult blContextBlitScaledImageD(BLContextCore* self, const BLRect* rect, const BLImageCore* img, const BLRectI* imgArea)
 
     # BLFont
-#     BLResult blFontInit(BLFontCore* self)
-#     BLResult blFontDestroy(BLFontCore* self)
-#     BLResult blFontReset(BLFontCore* self)
-#     BLResult blFontAssignMove(BLFontCore* self, BLFontCore* other)
-#     BLResult blFontAssignWeak(BLFontCore* self, const BLFontCore* other)
-#     bool blFontEquals(const BLFontCore* a, const BLFontCore* b)
-#     BLResult blFontCreateFromFace(BLFontCore* self, const BLFontFaceCore* face, float size)
-#     BLResult blFontShape(const BLFontCore* self, BLGlyphBufferCore* gb)
-#     BLResult blFontMapTextToGlyphs(const BLFontCore* self, BLGlyphBufferCore* gb, BLGlyphMappingState* stateOut)
-#     BLResult blFontPositionGlyphs(const BLFontCore* self, BLGlyphBufferCore* gb, uint32_t positioningFlags)
-#     BLResult blFontApplyKerning(const BLFontCore* self, BLGlyphBufferCore* gb)
-#     BLResult blFontApplyGSub(const BLFontCore* self, BLGlyphBufferCore* gb, size_t index, BLBitWord lookups)
-#     BLResult blFontApplyGPos(const BLFontCore* self, BLGlyphBufferCore* gb, size_t index, BLBitWord lookups)
-#     BLResult blFontGetMatrix(const BLFontCore* self, BLFontMatrix* out)
-#     BLResult blFontGetMetrics(const BLFontCore* self, BLFontMetrics* out)
-#     BLResult blFontGetDesignMetrics(const BLFontCore* self, BLFontDesignMetrics* out)
-#     BLResult blFontGetTextMetrics(const BLFontCore* self, BLGlyphBufferCore* gb, BLTextMetrics* out)
-#     BLResult blFontGetGlyphBounds(const BLFontCore* self, const uint32_t* glyphData, intptr_t glyphAdvance, BLBoxI* out, size_t count)
-#     BLResult blFontGetGlyphAdvances(const BLFontCore* self, const uint32_t* glyphData, intptr_t glyphAdvance, BLGlyphPlacement* out, size_t count)
-#     BLResult blFontGetGlyphOutlines(const BLFontCore* self, uint32_t glyphId, const BLMatrix2D* userMatrix, BLPathCore* out, BLPathSinkFunc sink, void* closure)
-#     BLResult blFontGetGlyphRunOutlines(const BLFontCore* self, const BLGlyphRun* glyphRun, const BLMatrix2D* userMatrix, BLPathCore* out, BLPathSinkFunc sink, void* closure)
-
-    BLResult blFontInit(BLFontCore* self) ;
-    BLResult blFontDestroy(BLFontCore* self) ;
-    BLResult blFontReset(BLFontCore* self) ;
-    BLResult blFontAssignMove(BLFontCore* self, BLFontCore* other) ;
-    BLResult blFontAssignWeak(BLFontCore* self, const BLFontCore* other) ;
-    bool blFontEquals(const BLFontCore* a, const BLFontCore* b) ;
-    BLResult blFontCreateFromFace(BLFontCore* self, const BLFontFaceCore* face, float size) ;
-    BLResult blFontShape(const BLFontCore* self, BLGlyphBufferCore* gb) ;
-    BLResult blFontMapTextToGlyphs(const BLFontCore* self, BLGlyphBufferCore* gb, BLGlyphMappingState* stateOut) ;
-    BLResult blFontPositionGlyphs(const BLFontCore* self, BLGlyphBufferCore* gb) ;
-    BLResult blFontApplyKerning(const BLFontCore* self, BLGlyphBufferCore* gb) ;
-    BLResult blFontApplyGSub(const BLFontCore* self, BLGlyphBufferCore* gb, const BLBitArrayCore* lookups) ;
-    BLResult blFontApplyGPos(const BLFontCore* self, BLGlyphBufferCore* gb, const BLBitArrayCore* lookups) ;
-    BLResult blFontGetMetrics(const BLFontCore* self, BLFontMetrics* out) ;
-    BLResult blFontGetMatrix(const BLFontCore* self, BLFontMatrix* out) ;
-    BLResult blFontGetDesignMetrics(const BLFontCore* self, BLFontDesignMetrics* out) ;
-    BLResult blFontGetTextMetrics(const BLFontCore* self, BLGlyphBufferCore* gb, BLTextMetrics* out) ;
-    BLResult blFontGetGlyphBounds(const BLFontCore* self, const uint32_t* glyphData, intptr_t glyphAdvance, BLBoxI* out, size_t count) ;
-    BLResult blFontGetGlyphAdvances(const BLFontCore* self, const uint32_t* glyphData, intptr_t glyphAdvance, BLGlyphPlacement* out, size_t count) ;
-    BLResult blFontGetGlyphOutlines(const BLFontCore* self, BLGlyphId glyphId, const BLMatrix2D* userTransform, BLPathCore* out, BLPathSinkFunc sink, void* userData) ;
-    BLResult blFontGetGlyphRunOutlines(const BLFontCore* self, const BLGlyphRun* glyphRun, const BLMatrix2D* userTransform, BLPathCore* out, BLPathSinkFunc sink, void* userData) ;
+    BLResult blFontInit(BLFontCore* self)
+    BLResult blFontDestroy(BLFontCore* self)
+    BLResult blFontReset(BLFontCore* self)
+    BLResult blFontAssignMove(BLFontCore* self, BLFontCore* other)
+    BLResult blFontAssignWeak(BLFontCore* self, const BLFontCore* other)
+    bool blFontEquals(const BLFontCore* a, const BLFontCore* b)
+    BLResult blFontCreateFromFace(BLFontCore* self, const BLFontFaceCore* face, float size)
+    BLResult blFontShape(const BLFontCore* self, BLGlyphBufferCore* gb)
+    BLResult blFontMapTextToGlyphs(const BLFontCore* self, BLGlyphBufferCore* gb, BLGlyphMappingState* stateOut)
+    BLResult blFontPositionGlyphs(const BLFontCore* self, BLGlyphBufferCore* gb)
+    BLResult blFontApplyKerning(const BLFontCore* self, BLGlyphBufferCore* gb)
+    BLResult blFontApplyGSub(const BLFontCore* self, BLGlyphBufferCore* gb, const BLBitArrayCore* lookups)
+    BLResult blFontApplyGPos(const BLFontCore* self, BLGlyphBufferCore* gb, const BLBitArrayCore* lookups)
+    BLResult blFontGetMetrics(const BLFontCore* self, BLFontMetrics* out)
+    BLResult blFontGetMatrix(const BLFontCore* self, BLFontMatrix* out)
+    BLResult blFontGetDesignMetrics(const BLFontCore* self, BLFontDesignMetrics* out)
+    BLResult blFontGetTextMetrics(const BLFontCore* self, BLGlyphBufferCore* gb, BLTextMetrics* out)
+    BLResult blFontGetGlyphBounds(const BLFontCore* self, const uint32_t* glyphData, intptr_t glyphAdvance, BLBoxI* out, size_t count)
+    BLResult blFontGetGlyphAdvances(const BLFontCore* self, const uint32_t* glyphData, intptr_t glyphAdvance, BLGlyphPlacement* out, size_t count)
+    BLResult blFontGetGlyphOutlines(const BLFontCore* self, BLGlyphId glyphId, const BLMatrix2D* userTransform, BLPathCore* out, BLPathSinkFunc sink, void* userData)
+    BLResult blFontGetGlyphRunOutlines(const BLFontCore* self, const BLGlyphRun* glyphRun, const BLMatrix2D* userTransform, BLPathCore* out, BLPathSinkFunc sink, void* userData)
 
 
     # BLFontData
@@ -597,40 +575,22 @@ cdef extern from "blend2d.h":
     BLResult blGradientApplyMatrixOp(BLGradientCore* self, uint32_t opType, const void* opData)
     bool blGradientEquals(const BLGradientCore* a, const BLGradientCore* b)
 
-
-#    BLResult blImageInit(BLImageCore* self)
-#    BLResult blImageInitAs(BLImageCore* self, int w, int h, uint32_t format)
-#    BLResult blImageInitAsFromData(BLImageCore* self, int w, int h, uint32_t format, void* pixelData, intptr_t stride, BLDestroyImplFunc destroyFunc, void* destroyData)
-#    BLResult blImageDestroy(BLImageCore* self)
-#    BLResult blImageReset(BLImageCore* self)
-#    BLResult blImageAssignMove(BLImageCore* self, BLImageCore* other)
-#    BLResult blImageAssignWeak(BLImageCore* self, const BLImageCore* other)
-#    BLResult blImageAssignDeep(BLImageCore* self, const BLImageCore* other)
-#    BLResult blImageCreate(BLImageCore* self, int w, int h, uint32_t format)
-#    BLResult blImageCreateFromData(BLImageCore* self, int w, int h, uint32_t format, void* pixelData, intptr_t stride, BLDestroyImplFunc destroyFunc, void* destroyData)
-#    BLResult blImageGetData(const BLImageCore* self, BLImageData* dataOut)
-#    BLResult blImageMakeMutable(BLImageCore* self, BLImageData* dataOut)
-#    BLResult blImageConvert(BLImageCore* self, uint32_t format)
-#    bool blImageEquals(const BLImageCore* a, const BLImageCore* b)
-#    BLResult blImageScale(BLImageCore* dst, const BLImageCore* src, const BLSizeI* size, uint32_t filter, const BLImageScaleFilter* options)
-
-
     # BLImage
-    BLResult blImageInit(BLImageCore* self) ;
-    BLResult blImageInitAs(BLImageCore* self, int w, int h, BLFormat format) ;
-    BLResult blImageInitAsFromData(BLImageCore* self, int w, int h, BLFormat format, void* pixelData, intptr_t stride, BLDataAccessFlags accessFlags, BLDestroyExternalDataFunc destroyFunc, void* userData) ;
-    BLResult blImageDestroy(BLImageCore* self) ;
-    BLResult blImageReset(BLImageCore* self) ;
-    BLResult blImageAssignMove(BLImageCore* self, BLImageCore* other) ;
-    BLResult blImageAssignWeak(BLImageCore* self, const BLImageCore* other) ;
-    BLResult blImageAssignDeep(BLImageCore* self, const BLImageCore* other) ;
-    BLResult blImageCreate(BLImageCore* self, int w, int h, BLFormat format) ;
-    BLResult blImageCreateFromData(BLImageCore* self, int w, int h, BLFormat format, void* pixelData, intptr_t stride, BLDataAccessFlags accessFlags, BLDestroyExternalDataFunc destroyFunc, void* userData) ;
-    BLResult blImageGetData(const BLImageCore* self, BLImageData* dataOut) ;
-    BLResult blImageMakeMutable(BLImageCore* self, BLImageData* dataOut) ;
-    BLResult blImageConvert(BLImageCore* self, BLFormat format) ;
-    bool blImageEquals(const BLImageCore* a, const BLImageCore* b) ;
-    BLResult blImageScale(BLImageCore* dst, const BLImageCore* src, const BLSizeI* size, BLImageScaleFilter filter);
+    BLResult blImageInit(BLImageCore* self)
+    BLResult blImageInitAs(BLImageCore* self, int w, int h, BLFormat format)
+    BLResult blImageInitAsFromData(BLImageCore* self, int w, int h, BLFormat format, void* pixelData, intptr_t stride, BLDataAccessFlags accessFlags, BLDestroyExternalDataFunc destroyFunc, void* userData)
+    BLResult blImageDestroy(BLImageCore* self)
+    BLResult blImageReset(BLImageCore* self)
+    BLResult blImageAssignMove(BLImageCore* self, BLImageCore* other)
+    BLResult blImageAssignWeak(BLImageCore* self, const BLImageCore* other)
+    BLResult blImageAssignDeep(BLImageCore* self, const BLImageCore* other)
+    BLResult blImageCreate(BLImageCore* self, int w, int h, BLFormat format)
+    BLResult blImageCreateFromData(BLImageCore* self, int w, int h, BLFormat format, void* pixelData, intptr_t stride, BLDataAccessFlags accessFlags, BLDestroyExternalDataFunc destroyFunc, void* userData)
+    BLResult blImageGetData(const BLImageCore* self, BLImageData* dataOut)
+    BLResult blImageMakeMutable(BLImageCore* self, BLImageData* dataOut)
+    BLResult blImageConvert(BLImageCore* self, BLFormat format)
+    bool blImageEquals(const BLImageCore* a, const BLImageCore* b)
+    BLResult blImageScale(BLImageCore* dst, const BLImageCore* src, const BLSizeI* size, BLImageScaleFilter filter)
 
     # BLMatrix2D
     BLResult blMatrix2DSetIdentity(BLMatrix2D* self)

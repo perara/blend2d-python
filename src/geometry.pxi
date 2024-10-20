@@ -26,7 +26,7 @@
 # BLResult blMatrix2DSetScaling(BLMatrix2D* self, double x, double y)
 # BLResult blMatrix2DSetSkewing(BLMatrix2D* self, double x, double y)
 # BLResult blMatrix2DSetRotation(BLMatrix2D* self, double angle, double cx, double cy)
-# BLResult blMatrix2DApplyOp(BLMatrix2D* self, uint32_t opType, const void* opData)
+# BLResult blMatrix2DApplyOp(BLMatrix2D* self, BLTransformOp opType, const void* opData)
 # BLResult blMatrix2DInvert(BLMatrix2D* dst, const BLMatrix2D* src)
 # uint32_t blMatrix2DGetType(const BLMatrix2D* self)
 # BLResult blMatrix2DMapPointDArray(const BLMatrix2D* self, BLPoint* dst, const BLPoint* src, size_t count)
@@ -44,19 +44,19 @@ cdef class Matrix2D:
         data[0] = angle
         data[1] = cx
         data[2] = cy
-        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_TRANSFORM_OP_ROTATE_PT, data)
+        _capi.blMatrix2DApplyOp(&self._self, _capi.BLTransformOp.BL_TRANSFORM_OP_ROTATE_PT, data)
 
     def scale(self, double x, double y):
         cdef double data[2]
         data[0] = x
         data[1] = y
-        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_TRANSFORM_OP_SCALE, data)
+        _capi.blMatrix2DApplyOp(&self._self, _capi.BLTransformOp.BL_TRANSFORM_OP_SCALE, data)
 
     def translate(self, double x, double y):
         cdef double data[2]
         data[0] = x
         data[1] = y
-        _capi.blMatrix2DApplyOp(&self._self, _capi.BLMatrix2DOp.BL_TRANSFORM_OP_TRANSLATE, data)
+        _capi.blMatrix2DApplyOp(&self._self, _capi.BLTransformOp.BL_TRANSFORM_OP_TRANSLATE, data)
 
 
 cdef class Rect:

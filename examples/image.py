@@ -1,6 +1,6 @@
 import blend2d
 import numpy as np
-import matplotlib.pyplot as plt
+from skimage.io import imsave
 
 
 def random_lines(context, width, height):
@@ -17,7 +17,7 @@ def random_lines(context, width, height):
         path.reset()
         path.move_to(x0, y0)
         path.line_to(x1, y1)
-        context.stroke_path(path)
+        context.stroke_path((0, 0), path)
 
 
 if __name__ == "__main__":
@@ -37,4 +37,4 @@ if __name__ == "__main__":
     context.rotate(-np.pi / 12)
     context.blit_image((10.0, 100.0), image, src)
 
-    plt.imshow(array)
+    imsave("image.png", array)
