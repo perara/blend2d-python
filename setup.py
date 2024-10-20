@@ -44,9 +44,7 @@ class cmake_build_ext(build_ext):
             ]
 
             if platform.system() == "Windows":
-                plat = (
-                    "x64" if platform.architecture()[0] == "64bit" else "Win32"
-                )
+                plat = "x64" if platform.architecture()[0] == "64bit" else "Win32"
                 cmake_args += [
                     "-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE",
                     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_{}={}".format(

@@ -34,9 +34,7 @@ if __name__ == "__main__":
     matrix = blend2d.Matrix2D()
     matrix.rotate(128.0, 128.0, 45.0)
     matrix.scale(0.25, 0.25)
-    pattern = blend2d.Pattern(
-        pattern_image, area, blend2d.ExtendMode.REPEAT, matrix
-    )
+    pattern = blend2d.Pattern(pattern_image, area, blend2d.ExtendMode.REPEAT, matrix)
     context.set_fill_style(pattern)
 
     circle = blend2d.Path()

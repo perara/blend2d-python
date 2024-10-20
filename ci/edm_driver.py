@@ -18,12 +18,10 @@ import sys
 import click
 
 DEPENDENCIES = {
-    'cython',
-    'numpy',
+    "cython",
+    "numpy",
 }
-CONFIG_FILE = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '.edm.yaml')
-)
+CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".edm.yaml"))
 
 
 @click.group()
@@ -32,13 +30,12 @@ def cli():
 
 
 @cli.command()
-@click.option('--runtime', default='3.6')
-@click.option('--environment', default=None)
+@click.option("--runtime", default="3.6")
+@click.option("--environment", default=None)
 def install(runtime, environment):
-    """ Install project and dependencies into a clean EDM environment.
-    """
+    """Install project and dependencies into a clean EDM environment."""
     parameters = get_parameters(runtime, environment)
-    parameters['packages'] = ' '.join(DEPENDENCIES)
+    parameters["packages"] = " ".join(DEPENDENCIES)
     # edm commands to setup the development environment
     commands = [
         "{edm} environments create {environment} --force --version={runtime}",
@@ -48,33 +45,29 @@ def install(runtime, environment):
     ]
     click.echo("Creating environment '{environment}'".format(**parameters))
     execute(commands, parameters)
-    click.echo('Done install')
+    click.echo("Done install")
 
 
 @cli.command()
-@click.option('--runtime', default='3.6')
-@click.option('--environment', default=None)
+@click.option("--runtime", default="3.6")
+@click.option("--environment", default=None)
 def test(runtime, environment):
-    """ Run the test suite in a given environment with the specified toolkit.
-    """
+    """Run the test suite in a given environment with the specified toolkit."""
     parameters = get_parameters(runtime, environment)
-    environ = {'PYTHONUNBUFFERED': '1'}
-    commands = [
-        "edm run -e {environment} -- python -m unittest discover blend2d"
-    ]
+    environ = {"PYTHONUNBUFFERED": "1"}
+    commands = ["edm run -e {environment} -- python -m unittest discover blend2d"]
 
     click.echo("Running tests in '{environment}'".format(**parameters))
     os.environ.update(environ)
     execute(commands, parameters)
-    click.echo('Done test')
+    click.echo("Done test")
 
 
 @cli.command()
-@click.option('--runtime', default='3.6')
-@click.option('--environment', default=None)
+@click.option("--runtime", default="3.6")
+@click.option("--environment", default=None)
 def cleanup(runtime, environment):
-    """ Remove a development environment.
-    """
+    """Remove a development environment."""
     parameters = get_parameters(runtime, environment)
     commands = [
         "edm run -e {environment} -- python setup.py clean",
@@ -82,22 +75,23 @@ def cleanup(runtime, environment):
     ]
     click.echo("Cleaning up environment '{environment}'".format(**parameters))
     execute(commands, parameters)
-    click.echo('Done cleanup')
+    click.echo("Done cleanup")
 
 
 # ----------------------------------------------------------------------------
 # Utility routines
 # ----------------------------------------------------------------------------
 
+
 def get_parameters(runtime, environment):
-    """ Set up parameters dictionary for format() substitution """
+    """Set up parameters dictionary for format() substitution"""
     parameters = {
-        'runtime': runtime,
-        'environment': environment,
-        'edm': 'edm --config {}'.format(CONFIG_FILE),
+        "runtime": runtime,
+        "environment": environment,
+        "edm": "edm --config {}".format(CONFIG_FILE),
     }
     if environment is None:
-        parameters['environment'] = 'blend2d-{runtime}'.format(**parameters)
+        parameters["environment"] = "blend2d-{runtime}".format(**parameters)
     return parameters
 
 
@@ -110,5 +104,5 @@ def execute(commands, parameters):
             sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

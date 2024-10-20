@@ -23,7 +23,23 @@
 from __future__ import absolute_import
 
 from ._capi import (
-    Array, ArrayType, CompOp, ConicalGradient, Context, ExtendMode, Font,
-    Format, Image, LinearGradient, Matrix2D, Path, Pattern, RadialGradient,
-    Rect, RectI, StrokeCap, StrokeCapPosition, StrokeJoin
+    Array,
+    ArrayType,
+    CompOp,
+    ConicalGradient,
+    Context,
+    ExtendMode,
+    Font,
+    Format,
+    Image,
+    LinearGradient,
+    Matrix2D,
+    Path,
+    Pattern,
+    RadialGradient,
+    Rect,
+    RectI,
+    StrokeCap,
+    StrokeCapPosition,
+    StrokeJoin,
 )
