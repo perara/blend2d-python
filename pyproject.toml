@@ -1,18 +1,17 @@
 [build-system]
 requires = ["setuptools>=42", "wheel", "numpy"]
-build-backend = "setuptools.build_meta" 
+build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 # Skip PyPy builds and musllinux
 skip = ["pp*", "*-musllinux*"]
 
-# Build for CPython 3.8 and newer
-# "cp38-*", "cp39-*", "cp310-*", "cp311-*", 
+# Build for CPython 3.12
 build = ["cp312-*"]
 
-# Use manylinux2014 for Linux builds to ensure compatibility
-manylinux-x86_64-image = "manylinux2014"
-manylinux-aarch64-image = "manylinux2014"
+# Use manylinux_2_28 for Linux builds to ensure better compatibility
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
 
 # Include NumPy in the build environment
 build-frontend = "pip"
@@ -21,8 +20,8 @@ before-build = [
     "python -c \"import os, glob, shutil; [shutil.rmtree(p, ignore_errors=True) for p in glob.glob('**/CMakeCache.txt', recursive=True)]; [shutil.rmtree(p, ignore_errors=True) for p in glob.glob('**/build/temp.*', recursive=True)]; print('Cleared CMake cache files and build directories')\""
 ]
 
-# Explicitly specify both x86_64 and arm64/aarch64 architectures
-archs = ["aarch64"] # , "x86_64"
+# Explicitly specify aarch64 architecture
+archs = ["aarch64", "x86_64"]
 
 # Test the wheels after building
 test-command = "python -c \"import blend2d; print(blend2d.__version__)\""
@@ -32,17 +31,16 @@ test-skip = ["*-emscripten*"]
 [tool.cibuildwheel.linux]
 before-all = [
     "yum install -y cmake",
-   
 ]
-environment = { CMAKE_BUILD_PARALLEL_LEVEL="2" }
+environment = { CMAKE_BUILD_PARALLEL_LEVEL="4" }
 
 # Enable cross-compilation for aarch64 on Linux
 [[tool.cibuildwheel.overrides]]
 select = "*-manylinux*"
-archs = ["x86_64", "aarch64"]
+archs = ["aarch64"]
 
 [tool.cibuildwheel.macos]
-environment = { CMAKE_BUILD_PARALLEL_LEVEL="2" }
+environment = { CMAKE_BUILD_PARALLEL_LEVEL="4" }
 
 [tool.cibuildwheel.windows]
 before-build = [
