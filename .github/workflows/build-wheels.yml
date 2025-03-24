@@ -50,13 +50,7 @@ jobs:
           - os: ubuntu-latest
             arch: aarch64
             use_qemu: true
-    
-    # Skip matrix entries based on selected architecture
-    if: github.event_name != 'workflow_dispatch' || 
-        github.event.inputs.architectures == 'all' || 
-        (github.event.inputs.architectures == 'x86_64-only' && (matrix.arch == 'x86_64')) || 
-        (github.event.inputs.architectures == 'arm64-only' && (matrix.arch == 'arm64' || matrix.arch == 'aarch64'))
-            
+
     steps:
       - uses: actions/checkout@v3
         with:
