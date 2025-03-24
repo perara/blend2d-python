@@ -2,154 +2,154 @@ name: Build Wheels
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches: [ main ]
+    tags:
+      - 'v*'  # Run on version tags for PyPI releases
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      architectures:
+        description: 'Architectures to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - x86_64-only
+          - arm64-only
+      publish_to:
+        description: 'Publish wheels to'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - test-pypi
+          - pypi
 
 jobs:
   build_wheels:
-    name: Build ${{ matrix.platform }} wheels
+    name: Build wheels on ${{ matrix.os }} for ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux x86_64
+          # x86_64 builds on all platforms (filtered by conditions below)
           - os: ubuntu-latest
-            platform: manylinux_x86_64
             arch: x86_64
-          
-          # Linux aarch64 (ARM64)
-          - os: ubuntu-latest
-            platform: manylinux_aarch64
-            arch: aarch64
-            qemu: true
-          
-          # macOS x86_64
-          - os: macos-11
-            platform: macosx_x86_64
-            arch: x86_64
-          
-          # macOS arm64
-          - os: macos-11
-            platform: macosx_arm64
-            arch: arm64
-            cross_compile: true
-          
-          # Windows x86_64
+            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'x86_64-only' || github.event_name != 'workflow_dispatch' }}
           - os: windows-latest
-            platform: win_amd64
-            arch: AMD64
-
+            arch: x86_64
+            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'x86_64-only' || github.event_name != 'workflow_dispatch' }}
+          - os: macos-latest
+            arch: x86_64
+            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'x86_64-only' || github.event_name != 'workflow_dispatch' }}
+          
+          # ARM64 builds (filtered by conditions below)
+          - os: macos-latest
+            arch: arm64
+            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'arm64-only' || github.event_name != 'workflow_dispatch' }}
+          - os: ubuntu-latest
+            arch: aarch64
+            use_qemu: true
+            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'arm64-only' || github.event_name != 'workflow_dispatch' }}
+    
+    # Skip matrix entries based on selected architecture
+    if: matrix.build_if != 'false'
+            
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: 'true'
+          submodules: recursive
 
-      # Set up QEMU for ARM64 emulation on Linux
+      # Set up QEMU for ARM64 Linux builds
       - name: Set up QEMU
-        if: ${{ matrix.qemu }}
+        if: matrix.use_qemu
         uses: docker/setup-qemu-action@v2
         with:
-          platforms: all
+          platforms: arm64
 
-      # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-
-      # Install dependencies
+          python-version: '3.12'
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install cibuildwheel
 
-      # Configure macOS arm64 cross-compilation
-      - name: Set macOS arm64 deployment target
-        if: ${{ matrix.cross_compile }}
+      # Set architecture-specific env variables
+      - name: Set architecture environment variable
         run: |
-          echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
-          echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
+          echo "CIBW_ARCHS=${{ matrix.arch }}" >> $GITHUB_ENV
+          
+      # Skip musllinux for all builds and set other cibuildwheel options
+      - name: Set cibuildwheel options
+        run: |
+          echo "CIBW_SKIP=*-musllinux*" >> $GITHUB_ENV
+          echo "CIBW_BUILD=cp312-*" >> $GITHUB_ENV
+          echo "CIBW_TEST_COMMAND=python -c \"import blend2d; print(blend2d.__version__)\"" >> $GITHUB_ENV
 
       # Build the wheels
       - name: Build wheels
-        env:
-          CIBW_BUILD_VERBOSITY: 1
-          CIBW_ARCHS: ${{ matrix.arch }}
         run: |
           python -m cibuildwheel --output-dir wheelhouse
-
-      # Store the built wheels
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
+      
+      # Upload artifacts
+      - uses: actions/upload-artifact@v3
         with:
-          name: wheels-${{ matrix.platform }}
+          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
           path: ./wheelhouse/*.whl
 
-  # Build WebAssembly wheels using Emscripten
-  build_wasm:
-    name: Build WebAssembly wheels
+  # Job to combine all wheels and publish to PyPI
+  publish:
+    name: Publish Wheels to PyPI
+    needs: build_wheels
     runs-on: ubuntu-latest
+    # Run on tag pushes or if publishing was selected in the workflow dispatch
+    if: startsWith(github.ref, 'refs/tags/') || 
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to != 'none')
     
     steps:
-      - uses: actions/checkout@v3
+      # Download all wheel artifacts
+      - name: Download all wheels
+        uses: actions/download-artifact@v3
         with:
-          submodules: 'true'
-          
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install cibuildwheel
+          path: ./dist
       
-      - name: Install Emscripten
+      # Prepare wheels for upload
+      - name: Prepare wheels for upload
         run: |
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
-          source ./emsdk_env.sh
-          echo "CIBW_ENVIRONMENT=EMSCRIPTEN_ROOT=$(pwd)/upstream/emscripten" >> $GITHUB_ENV
-          
-      - name: Build WebAssembly wheels
-        env:
-          CIBW_BUILD_VERBOSITY: 1
-          CIBW_PLATFORM: emscripten
-        run: |
-          python -m cibuildwheel --output-dir wheelhouse
-          
-      - name: Upload WebAssembly wheels
-        uses: actions/upload-artifact@v3
-        with:
-          name: wheels-emscripten
-          path: ./wheelhouse/*.whl
-
-  # Upload to PyPI when tagged
-  upload_pypi:
-    name: Upload to PyPI
-    needs: [build_wheels, build_wasm]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          path: dist
-          
-      - name: Prepare distribution
-        run: |
-          mkdir -p dist-upload
-          find dist -name "*.whl" -exec cp {} dist-upload \;
-
-      - name: Publish to PyPI
+          mkdir -p ./wheels
+          find ./dist -name "*.whl" -exec cp {} ./wheels/ \;
+          ls -la ./wheels/
+      
+      # Upload to TestPyPI
+      - name: Upload to TestPyPI
+        if: github.event.inputs.publish_to == 'test-pypi' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref, '-rc'))
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}  # You'll need to set this in GitHub secrets
-          packages-dir: dist-upload/ 
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: ./wheels/
+          skip-existing: true
+      
+      # Upload to PyPI
+      - name: Upload to PyPI
+        if: github.event.inputs.publish_to == 'pypi' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-rc'))
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: ./wheels/
+
+      # Upload combined wheels as an artifact
+      - name: Upload combined wheels artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: all-wheels
+          path: ./wheels/*.whl
