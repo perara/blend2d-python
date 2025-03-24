@@ -77,9 +77,14 @@ class cmake_build_ext(build_ext):
                         "-DCMAKE_C_FLAGS={}".format(optimization_flags),
                     ]
             elif platform.system() == "Linux":
+                arm_flags = ""
+                if platform.machine() in ["aarch64", "arm64"]:
+                    # Add specific ARM64 flags to enable NEON and crypto extensions
+                    arm_flags = " -march=armv8-a+crypto -mfpu=neon-fp-armv8 -mneon-for-64bits"
+                
                 cmake_args += [
-                    "-DCMAKE_C_FLAGS=-fPIC {}".format(optimization_flags),
-                    "-DCMAKE_CXX_FLAGS=-fPIC {}".format(optimization_flags),
+                    "-DCMAKE_C_FLAGS=-fPIC {} {}".format(optimization_flags, arm_flags),
+                    "-DCMAKE_CXX_FLAGS=-fPIC {} {}".format(optimization_flags, arm_flags),
                 ]
             elif platform.system() == "Darwin":  # macOS
                 cmake_args += [
