@@ -15,18 +15,18 @@ on:
         default: 'all'
         type: choice
         options:
-          - all
-          - x86_64-only
-          - arm64-only
+        - all
+        - x86_64-only
+        - arm64-only
       publish_to:
         description: 'Publish wheels to'
         required: true
         default: 'none'
         type: choice
         options:
-          - none
-          - test-pypi
-          - pypi
+        - none
+        - test-pypi
+        - pypi
 
 jobs:
   build_wheels:
@@ -36,28 +36,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # x86_64 builds on all platforms (filtered by conditions below)
+          # x86_64 builds on all platforms
           - os: ubuntu-latest
             arch: x86_64
-            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'x86_64-only' || github.event_name != 'workflow_dispatch' }}
           - os: windows-latest
             arch: x86_64
-            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'x86_64-only' || github.event_name != 'workflow_dispatch' }}
           - os: macos-latest
             arch: x86_64
-            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'x86_64-only' || github.event_name != 'workflow_dispatch' }}
           
-          # ARM64 builds (filtered by conditions below)
+          # ARM64 builds
           - os: macos-latest
             arch: arm64
-            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'arm64-only' || github.event_name != 'workflow_dispatch' }}
           - os: ubuntu-latest
             arch: aarch64
             use_qemu: true
-            build_if: ${{ github.event.inputs.architectures == 'all' || github.event.inputs.architectures == 'arm64-only' || github.event_name != 'workflow_dispatch' }}
     
     # Skip matrix entries based on selected architecture
-    if: matrix.build_if != 'false'
+    if: github.event_name != 'workflow_dispatch' || 
+        github.event.inputs.architectures == 'all' || 
+        (github.event.inputs.architectures == 'x86_64-only' && (matrix.arch == 'x86_64')) || 
+        (github.event.inputs.architectures == 'arm64-only' && (matrix.arch == 'arm64' || matrix.arch == 'aarch64'))
             
     steps:
       - uses: actions/checkout@v3
@@ -66,7 +64,7 @@ jobs:
 
       # Set up QEMU for ARM64 Linux builds
       - name: Set up QEMU
-        if: matrix.use_qemu
+        if: matrix.arch == 'aarch64'
         uses: docker/setup-qemu-action@v2
         with:
           platforms: arm64
@@ -109,9 +107,11 @@ jobs:
     name: Publish Wheels to PyPI
     needs: build_wheels
     runs-on: ubuntu-latest
-    # Run on tag pushes or if publishing was selected in the workflow dispatch
-    if: startsWith(github.ref, 'refs/tags/') || 
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to != 'none')
+    # Run based on conditions
+    if: >-
+      startsWith(github.ref, 'refs/tags/') || 
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.publish_to == 'test-pypi' || github.event.inputs.publish_to == 'pypi'))
     
     steps:
       # Download all wheel artifacts
@@ -129,7 +129,9 @@ jobs:
       
       # Upload to TestPyPI
       - name: Upload to TestPyPI
-        if: github.event.inputs.publish_to == 'test-pypi' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref, '-rc'))
+        if: >-
+          github.event.inputs.publish_to == 'test-pypi' || 
+          (startsWith(github.ref, 'refs/tags/') && contains(github.ref, '-rc'))
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
@@ -140,7 +142,9 @@ jobs:
       
       # Upload to PyPI
       - name: Upload to PyPI
-        if: github.event.inputs.publish_to == 'pypi' || (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-rc'))
+        if: >-
+          github.event.inputs.publish_to == 'pypi' || 
+          (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-rc'))
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
