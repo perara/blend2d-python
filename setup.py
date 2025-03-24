@@ -78,9 +78,9 @@ class cmake_build_ext(build_ext):
                     ]
             elif platform.system() == "Linux":
                 arm_flags = ""
-                if platform.machine() in ["aarch64", "arm64"]:
-                    # Add specific ARM64 flags to enable NEON and crypto extensions
-                    arm_flags = " -march=armv8-a+crypto -mfpu=neon-fp-armv8 -mneon-for-64bits"
+                # if platform.machine() in ["aarch64", "arm64"]:
+                #     # Add specific ARM64 flags to enable NEON and crypto extensions
+                #     arm_flags = " -march=armv8-a+crypto -mfpu=neon-fp-armv8 -mneon-for-64bits"
                 
                 cmake_args += [
                     "-DCMAKE_C_FLAGS=-fPIC {} {}".format(optimization_flags, arm_flags),

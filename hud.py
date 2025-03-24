@@ -322,7 +322,7 @@ class SensorSystem:
                             self.ammo_max = 0
                 
                 # Automatically reset firing flag after effect time
-                if self.firing and current_time - self.firing_effect_time > 0.15:  # 150ms firing effect
+                if self.firing and current_time - self.firing_effect_time > 0.2:  # 200ms firing effect to match pulse duration
                     self.firing = False
                 
                 # Shield recharging
@@ -1092,6 +1092,13 @@ class ReticleRenderer:
         self.tick_radius_outer = self.tick_radius + self.tick_length
         self.tick_angle_increment = TWO_PI / self.tick_count
         
+        # Pulse effect parameters
+        self.pulse_start_time = 0
+        self.pulse_duration = 0.2  # Duration of pulse animation in seconds
+        self.pulse_size_start = 20   # Starting size of pulse
+        self.pulse_size_end = self.radius * 1.5  # Maximum size of pulse
+        self.is_pulse_active = False  # Flag to track if pulse is currently active
+        
         # Pre-compute reticle decorations
         self._precompute_paths()
     
@@ -1154,6 +1161,20 @@ class ReticleRenderer:
         """Draw a futuristic central reticle with ammo indicator and firing effect"""
         ctx.save()
         
+        # Check if we need to start a new pulse
+        current_time = time.time()
+        if is_firing and not self.is_pulse_active:
+            self.pulse_start_time = current_time
+            self.is_pulse_active = True
+        
+        # Calculate pulse animation progress
+        pulse_elapsed = current_time - self.pulse_start_time
+        pulse_progress = pulse_elapsed / self.pulse_duration
+        
+        # Reset pulse if animation is complete
+        if pulse_progress >= 1.0 and self.is_pulse_active:
+            self.is_pulse_active = False
+        
         # Draw the main circle with appropriate color
         if has_ammo:
             ctx.set_stroke_style(ACCENT_COLOR)
@@ -1183,6 +1204,17 @@ class ReticleRenderer:
         ctx.stroke_width = 1.0
         ctx.stroke_path(self.crosshair_path)
         
+        # Draw pulse effect if active
+        if self.is_pulse_active and pulse_progress < 1.0:
+            # Calculate pulse size and opacity
+            pulse_size = self.pulse_size_start + (self.pulse_size_end - self.pulse_size_start) * pulse_progress
+            pulse_opacity = max(0, 1.0 - pulse_progress)  # Fade from 1.0 to 0.0
+            
+            # Draw the pulse ring
+            ctx.set_stroke_style(get_cached_color(1.0, 1.0, 1.0, pulse_opacity))
+            ctx.stroke_width = 2.0 * (1.0 - pulse_progress * 0.5)  # Slightly thinner as it expands
+            ctx.stroke_circle(self.cx, self.cy, pulse_size)
+        
         # Draw center dot/element
         if not has_ammo:
             # Red X when out of ammo
@@ -1190,28 +1222,9 @@ class ReticleRenderer:
             ctx.stroke_width = 2.0
             ctx.stroke_path(self.x_path)
         elif is_firing:
-            # Simplified firing elements - using solid colors
-            # Draw a solid circle
+            # Draw a slightly enlarged center dot when firing
             ctx.set_fill_style(WHITE_COLOR)
             ctx.fill_circle(self.cx, self.cy, 5)
-            
-            # Add a pulse ring based on firing time
-            current_time = time.time()
-            pulse_phase = (current_time * 5) % 1.0  # Cycles through 0-1 every 0.2 seconds
-            
-            # Pulse ring that expands during firing
-            max_pulse_radius = self.radius * 0.25  # Cap the maximum size
-            pulse_radius = max_pulse_radius * pulse_phase
-            ctx.set_stroke_style(WHITE_COLOR)
-            ctx.stroke_width = 1.5 * (1 - pulse_phase * 0.2)  # Gets slightly thinner as it expands
-            ctx.stroke_circle(self.cx, self.cy, pulse_radius)
-            
-            # Second pulse ring with different timing for added effect
-            second_pulse_phase = ((current_time * 5) + 0.5) % 1.0  # Offset from first pulse
-            if second_pulse_phase < 0.8:  # Only show second ring during part of the cycle
-                second_pulse_radius = max_pulse_radius * second_pulse_phase
-                ctx.stroke_width = 1.0 * (1 - second_pulse_phase * 0.3)
-                ctx.stroke_circle(self.cx, self.cy, second_pulse_radius)
         else:
             # Normal state - draw a futuristic center element
             ctx.set_fill_style(WHITE_COLOR)
