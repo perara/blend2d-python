@@ -29,42 +29,23 @@ on:
         - pypi
 
 jobs:
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }} for ${{ matrix.arch }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # x86_64 builds on all platforms
-          - os: ubuntu-latest
-            arch: x86_64
-          - os: windows-latest
-            arch: x86_64
-          - os: macos-latest
-            arch: x86_64
-          
-          # ARM64 builds
-          - os: macos-latest
-            arch: arm64
-          - os: ubuntu-latest
-            arch: aarch64
-            use_qemu: true
-
+  # Build x86_64 wheels
+  build_x86_64:
+    name: Build x86_64 wheels on Linux
+    # Run for non-dispatch events or when 'all' or 'x86_64-only' is selected
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.architectures == 'all' ||
+      github.event.inputs.architectures == 'x86_64-only'
+    runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Set up QEMU for ARM64 Linux builds
-      - name: Set up QEMU
-        if: matrix.arch == 'aarch64'
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: arm64
-
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       
@@ -76,7 +57,7 @@ jobs:
       # Set architecture-specific env variables
       - name: Set architecture environment variable
         run: |
-          echo "CIBW_ARCHS=${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "CIBW_ARCHS=x86_64" >> $GITHUB_ENV
           
       # Skip musllinux for all builds and set other cibuildwheel options
       - name: Set cibuildwheel options
@@ -91,15 +72,69 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse
       
       # Upload artifacts
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
+          name: wheels-ubuntu-latest-x86_64
+          path: ./wheelhouse/*.whl
+
+  # Build ARM64 wheels (separate job)
+  build_arm64:
+    name: Build ARM64 wheels on Linux
+    # Run for non-dispatch events or when 'all' or 'arm64-only' is selected
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.architectures == 'all' ||
+      github.event.inputs.architectures == 'arm64-only'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Set up QEMU for ARM64 Linux builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel
+
+      # Set architecture-specific env variables
+      - name: Set architecture environment variable
+        run: |
+          echo "CIBW_ARCHS=aarch64" >> $GITHUB_ENV
+          
+      # Skip musllinux for all builds and set other cibuildwheel options
+      - name: Set cibuildwheel options
+        run: |
+          echo "CIBW_SKIP=*-musllinux*" >> $GITHUB_ENV
+          echo "CIBW_BUILD=cp312-*" >> $GITHUB_ENV
+          echo "CIBW_TEST_COMMAND=python -c \"import blend2d; print(blend2d.__version__)\"" >> $GITHUB_ENV
+
+      # Build the wheels
+      - name: Build wheels
+        run: |
+          python -m cibuildwheel --output-dir wheelhouse
+      
+      # Upload artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-ubuntu-latest-aarch64
           path: ./wheelhouse/*.whl
 
   # Job to combine all wheels and publish to PyPI
   publish:
     name: Publish Wheels to PyPI
-    needs: build_wheels
+    needs: [build_x86_64, build_arm64]
     runs-on: ubuntu-latest
     # Run based on conditions
     if: >-
@@ -109,8 +144,7 @@ jobs:
     
     steps:
       # Download all wheel artifacts
-      - name: Download all wheels
-        uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./dist
       
@@ -146,8 +180,7 @@ jobs:
           packages-dir: ./wheels/
 
       # Upload combined wheels as an artifact
-      - name: Upload combined wheels artifact
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: all-wheels
           path: ./wheels/*.whl
