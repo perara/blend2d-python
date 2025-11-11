@@ -29,7 +29,7 @@ Pre-built wheels are available for:
 - WebAssembly (via Emscripten)
 
 ```bash
-pip install blend2d
+pip install blend2d-python
 ```
 
 ### From Source

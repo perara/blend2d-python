@@ -97,6 +97,13 @@ jobs:
     name: Publish to PyPI
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
+    # Add environment for Trusted Publishing
+    environment:
+      name: pypi
+      url: https://pypi.org/p/blend2d-python
+    # Required permissions for Trusted Publishing
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     # Run based on conditions
     if: >-
       startsWith(github.ref, 'refs/tags/') || 
@@ -126,12 +133,10 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
       
-      # Upload to PyPI
+      # Upload to PyPI using Trusted Publishing (no token needed!)
       - name: Upload to PyPI
         if: >-
           github.event.inputs.publish_to == 'pypi' || 
           (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, '-rc'))
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+        # No credentials needed - uses Trusted Publishing via OIDC
