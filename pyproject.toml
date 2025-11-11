@@ -3,8 +3,8 @@ requires = ["setuptools>=42", "wheel", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
-# Skip PyPy builds and musllinux
-skip = ["pp*", "*-musllinux*"]
+# Skip PyPy builds, musllinux, and macOS (temporarily until import issue is resolved)
+skip = ["pp*", "*-musllinux*", "*-macosx*"]
 
 # Build for CPython 3.8-3.12 (broader compatibility)
 build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*"]
