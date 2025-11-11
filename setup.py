@@ -87,7 +87,37 @@ class cmake_build_ext(build_ext):
                     "-DCMAKE_CXX_FLAGS=-fPIC {} {}".format(optimization_flags, arm_flags),
                 ]
             elif platform.system() == "Darwin":  # macOS
+                # Detect target architecture for macOS
+                # Check for ARCHFLAGS environment variable set by cibuildwheel
+                archflags = os.environ.get('ARCHFLAGS', '')
+                target_arch = None
+                
+                if 'arm64' in archflags:
+                    target_arch = 'arm64'
+                elif 'x86_64' in archflags:
+                    target_arch = 'x86_64'
+                else:
+                    # Try to detect from Python interpreter architecture
+                    try:
+                        result = subprocess.check_output(['file', sys.executable]).decode('utf-8')
+                        if 'arm64' in result:
+                            target_arch = 'arm64'
+                        elif 'x86_64' in result:
+                            target_arch = 'x86_64'
+                    except:
+                        pass
+                
+                # Fallback to system architecture
+                if not target_arch:
+                    machine = platform.machine()
+                    if machine == 'arm64':
+                        target_arch = 'arm64'
+                    else:
+                        target_arch = 'x86_64'
+                
+                print(f"Building for macOS architecture: {target_arch}")
                 cmake_args += [
+                    "-DCMAKE_OSX_ARCHITECTURES={}".format(target_arch),
                     "-DCMAKE_C_FLAGS={}".format(optimization_flags),
                     "-DCMAKE_CXX_FLAGS={}".format(optimization_flags),
                 ]
@@ -104,7 +134,12 @@ class cmake_build_ext(build_ext):
             
             # Use all available CPU cores for the build
             cpu_count = multiprocessing.cpu_count()
-            cmd = ["cmake", "--build", ".", "--config", BUILD_TYPE, "--", "-j{}".format(cpu_count)]
+            if platform.system() == "Windows":
+                # MSBuild uses /m:N for parallel builds
+                cmd = ["cmake", "--build", ".", "--config", BUILD_TYPE, "--", "/m:{}".format(cpu_count)]
+            else:
+                # Unix makefiles use -jN
+                cmd = ["cmake", "--build", ".", "--config", BUILD_TYPE, "--", "-j{}".format(cpu_count)]
             print("Building with {} cores".format(cpu_count))
             subprocess.check_call(cmd, cwd=tmpdir)
 
