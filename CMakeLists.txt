@@ -23,6 +23,16 @@ set(NANOBIND_DIR "${CMAKE_CURRENT_LIST_DIR}/3rdparty/nanobind" CACHE PATH "Locat
 add_subdirectory(${NANOBIND_DIR})
 
 # Find Python and NumPy (needed for array support)
+# Use the Python executable specified by setup.py (important for cross-compilation and cibuildwheel)
+if(DEFINED PYTHON_EXECUTABLE)
+    # Set hints for FindPython to use the correct Python version
+    set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}" CACHE FILEPATH "Path to Python executable")
+    get_filename_component(Python_ROOT_DIR "${PYTHON_EXECUTABLE}" DIRECTORY)
+    get_filename_component(Python_ROOT_DIR "${Python_ROOT_DIR}" DIRECTORY)
+    set(Python_FIND_STRATEGY LOCATION)
+    set(Python_FIND_REGISTRY NEVER)
+    set(Python_FIND_FRAMEWORK NEVER)
+endif()
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module NumPy)
 
 # Blend2D nanobind module
