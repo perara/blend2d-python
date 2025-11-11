@@ -28,15 +28,17 @@ set(BLEND2D_NANOBIND_SOURCES
 
 nanobind_add_module(
   ${BLEND2DPY_TARGET_NAME}
-  NB_STATIC
+  NB_STATIC  
   ${BLEND2D_NANOBIND_SOURCES}
 )
 
-# Don't override OUTPUT_NAME - let nanobind and setup.py handle the correct naming
-# The BLEND2DPY_TARGET_NAME already includes the correct name like "_capi.cpython-38-darwin"
-
+# On Windows, ensure we use .pyd extension
+# On Unix, let nanobind handle the naming automatically
 if(WIN32)
-  set_target_properties( ${BLEND2DPY_TARGET_NAME} PROPERTIES SUFFIX ".pyd" )
+  # Windows needs explicit .pyd suffix
+  set_target_properties(${BLEND2DPY_TARGET_NAME} PROPERTIES SUFFIX ".pyd")
+  # Also ensure the base name is correct (without the platform suffix)
+  set_target_properties(${BLEND2DPY_TARGET_NAME} PROPERTIES OUTPUT_NAME "_capi")
 endif()
 
 target_include_directories( ${BLEND2DPY_TARGET_NAME} BEFORE PRIVATE 
