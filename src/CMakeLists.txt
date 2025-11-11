@@ -32,8 +32,8 @@ nanobind_add_module(
   ${BLEND2D_NANOBIND_SOURCES}
 )
 
-# Set the output name to avoid double extension
-set_target_properties(${BLEND2DPY_TARGET_NAME} PROPERTIES OUTPUT_NAME "_capi")
+# Don't override OUTPUT_NAME - let nanobind and setup.py handle the correct naming
+# The BLEND2DPY_TARGET_NAME already includes the correct name like "_capi.cpython-38-darwin"
 
 if(WIN32)
   set_target_properties( ${BLEND2DPY_TARGET_NAME} PROPERTIES SUFFIX ".pyd" )
