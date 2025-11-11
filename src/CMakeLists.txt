@@ -32,14 +32,20 @@ nanobind_add_module(
   ${BLEND2D_NANOBIND_SOURCES}
 )
 
-# On Windows, ensure we use .pyd extension
-# On Unix, let nanobind handle the naming automatically
+# Set the output name to _capi (without ABI tags)
+# Python can import this as "import _capi" or "from . import _capi"
+set_target_properties(${BLEND2DPY_TARGET_NAME} PROPERTIES OUTPUT_NAME "_capi")
+
 if(WIN32)
-  # Windows needs explicit .pyd suffix
+  # Windows Python modules use .pyd extension instead of .so
   set_target_properties(${BLEND2DPY_TARGET_NAME} PROPERTIES SUFFIX ".pyd")
-  # Also ensure the base name is correct (without the platform suffix)
-  set_target_properties(${BLEND2DPY_TARGET_NAME} PROPERTIES OUTPUT_NAME "_capi")
 endif()
+
+# Debug: print what we're building
+message(STATUS "Building Python extension: ${BLEND2DPY_TARGET_NAME}")
+message(STATUS "Output name will be: _capi")
+get_target_property(TARGET_SUFFIX ${BLEND2DPY_TARGET_NAME} SUFFIX)
+message(STATUS "File suffix: ${TARGET_SUFFIX}")
 
 target_include_directories( ${BLEND2DPY_TARGET_NAME} BEFORE PRIVATE 
   ${BLEND2D_INCLUDE_DIR} 
