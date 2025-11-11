@@ -9,15 +9,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
     inputs:
-      architectures:
-        description: 'Architectures to build'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-        - all
-        - x86_64-only
-        - arm64-only
       publish_to:
         description: 'Publish wheels to'
         required: true
@@ -29,64 +20,15 @@ on:
         - pypi
 
 jobs:
-  # Build x86_64 wheels
-  build_x86_64:
-    name: Build x86_64 wheels on Linux
-    # Run for non-dispatch events or when 'all' or 'x86_64-only' is selected
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.architectures == 'all' ||
-      github.event.inputs.architectures == 'x86_64-only'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        # macos-13 is Intel, macos-14 is Apple Silicon
+      fail-fast: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install cibuildwheel
-
-      # Set architecture-specific env variables
-      - name: Set architecture environment variable
-        run: |
-          echo "CIBW_ARCHS=x86_64" >> $GITHUB_ENV
-          
-      # Skip musllinux for all builds and set other cibuildwheel options
-      - name: Set cibuildwheel options
-        run: |
-          echo "CIBW_SKIP=*-musllinux*" >> $GITHUB_ENV
-          echo "CIBW_BUILD=cp312-*" >> $GITHUB_ENV
-          echo "CIBW_TEST_COMMAND=python -c \"import blend2d; print(blend2d.__version__)\"" >> $GITHUB_ENV
-
-      # Build the wheels
-      - name: Build wheels
-        run: |
-          python -m cibuildwheel --output-dir wheelhouse
-      
-      # Upload artifacts
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheels-ubuntu-latest-x86_64
-          path: ./wheelhouse/*.whl
-
-  # Build ARM64 wheels (separate job)
-  build_arm64:
-    name: Build ARM64 wheels on Linux
-    # Run for non-dispatch events or when 'all' or 'arm64-only' is selected
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.architectures == 'all' ||
-      github.event.inputs.architectures == 'arm64-only'
-    runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,6 +36,7 @@ jobs:
 
       # Set up QEMU for ARM64 Linux builds
       - name: Set up QEMU
+        if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -108,33 +51,50 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install cibuildwheel
 
-      # Set architecture-specific env variables
-      - name: Set architecture environment variable
-        run: |
-          echo "CIBW_ARCHS=aarch64" >> $GITHUB_ENV
-          
-      # Skip musllinux for all builds and set other cibuildwheel options
-      - name: Set cibuildwheel options
-        run: |
-          echo "CIBW_SKIP=*-musllinux*" >> $GITHUB_ENV
-          echo "CIBW_BUILD=cp312-*" >> $GITHUB_ENV
-          echo "CIBW_TEST_COMMAND=python -c \"import blend2d; print(blend2d.__version__)\"" >> $GITHUB_ENV
-
-      # Build the wheels
+      # Build the wheels (using pyproject.toml configuration)
       - name: Build wheels
-        run: |
-          python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          # macOS-specific: build for the native architecture only
+          CIBW_ARCHS_MACOS: ${{ matrix.os == 'macos-13' && 'x86_64' || matrix.os == 'macos-14' && 'arm64' || 'auto' }}
       
       # Upload artifacts
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-ubuntu-latest-aarch64
+          name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
 
-  # Job to combine all wheels and publish to PyPI
+  # Build source distribution
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  # Job to publish to PyPI
   publish:
-    name: Publish Wheels to PyPI
-    needs: [build_x86_64, build_arm64]
+    name: Publish to PyPI
+    needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
     # Run based on conditions
     if: >-
@@ -147,13 +107,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: ./dist
+          merge-multiple: true
       
-      # Prepare wheels for upload
-      - name: Prepare wheels for upload
+      - name: List all files to be uploaded
         run: |
-          mkdir -p ./wheels
-          find ./dist -name "*.whl" -exec cp {} ./wheels/ \;
-          ls -la ./wheels/
+          ls -lah ./dist/
       
       # Upload to TestPyPI
       - name: Upload to TestPyPI
@@ -165,7 +123,6 @@ jobs:
           user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
-          packages-dir: ./wheels/
           skip-existing: true
       
       # Upload to PyPI
@@ -177,10 +134,3 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: ./wheels/
-
-      # Upload combined wheels as an artifact
-      - uses: actions/upload-artifact@v4
-        with:
-          name: all-wheels
-          path: ./wheels/*.whl
